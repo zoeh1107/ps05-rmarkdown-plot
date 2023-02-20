@@ -21,7 +21,8 @@ gapminder <- read_delim("gapminder.csv")
 cat("It has", nrow(gapminder), "rows and", ncol(gapminder), "columns.")
 ```
 /
-3.  It looks alright. However, I found the variable names a little bit long and confusing. I also could not see all the variables because it has 25 variables.
+3.  
+It looks okay. 
 
 ```{r}
 head(gapminder)
@@ -37,7 +38,7 @@ cat("iso2 has", length(unique(gapminder$iso2)), "countries")
 cat("name has", length(unique(gapminder$name)), "countries")
 ```
 
-2\.
+2.
 
 (a) Iso-2 code "NA" was connected to more than one name. It was connected to another "name" and the country "Namibia". Probably, the first NA indicates the missing values and the second NA indicates the country code of Namibia.
 
