@@ -1,0 +1,230 @@
+---
+title: "PS5"
+author: "zoe"
+date: "2023-02-19"
+output: html_document
+---
+
+```{r, include=FALSE}
+library(tidyverse)
+```
+
+## 1 Load and check data (5pt)
+
+2.  
+
+```{r}
+gapminder <- read_delim("gapminder.csv")
+```
+
+```{r, echo=FALSE}
+cat("It has", nrow(gapminder), "rows and", ncol(gapminder), "columns.")
+```
+/
+3.  It looks alright. However, I found the variable names a little bit long and confusing. I also could not see all the variables because it has 25 variables.
+
+```{r}
+head(gapminder)
+```
+
+## 2 Descriptive Statistics (15pt)
+
+1.  
+
+```{r}
+cat("iso3 has", length(unique(gapminder$iso3)), "countries")
+cat("iso2 has", length(unique(gapminder$iso2)), "countries")
+cat("name has", length(unique(gapminder$name)), "countries")
+```
+
+2\.
+
+(a) Iso-2 code "NA" was connected to more than one name. It was connected to another "name" and the country "Namibia". Probably, the first NA indicates the missing values and the second NA indicates the country code of Namibia.
+
+```{r}
+gapminder %>%
+  group_by(iso2) %>% 
+  filter(n_distinct(name)>1) %>% 
+  summarize(name = unique(name))
+```
+
+(b) Name "NA" was connected to more than one iso3-code. The countries that were connected to NA were CHANISL, GBM, KOS, and NLD CURACAO.
+
+```{r}
+gapminder %>%
+  group_by(name) %>% 
+  filter(n_distinct(iso3)>1) %>% 
+  summarize(iso3 = unique(iso3))
+```
+
+3.The minimum year is 1960 and the maximum year is 2019.
+
+```{r}
+gapminder %>% 
+   summarize(maximum_year = max(time, na.rm=TRUE),
+             minimum_year = min(time, na.rm=TRUE))
+```
+
+## 3 CO2 emissions (30pt)
+
+1.  2017, 2018, 2019 have most missing data in co2 and co2_PC.
+
+```{r}
+gapminder %>% 
+  group_by(time) %>% 
+ summarize(NA_co2 =sum(is.na(co2)),
+           NA_co2_PC=sum(is.na(co2_PC))) %>% 
+  arrange(desc(NA_co2)) %>% 
+  head()
+```
+
+2.  
+
+```{r, warning=FALSE}
+gapminder %>%
+  filter(name %in% c("United States of America", "China", "India", "Japan", "France")) %>% 
+  ggplot(aes(time,co2, col=factor(name)))+
+  geom_point()+
+  geom_line()+
+  labs(x="Year", y="CO2", col="Country")
+```
+
+3.  In the first figure (Co2), the United States have kept emitting more CO2 than most of the other countries, and China's emission of CO2 has recently skyrocketted and surpassed that of US. In the second figure (CO2 per capita), although the amount of CO2 emissions of China has recently increased, the US has been emitted most CO2 over the time. India's emission has also increased recently, but in terms of CO2 per capita, the amount is pretty small. Japan and France have kept emitting a fair amount of CO2. Therefore, United States has emitted more CO2 than any other countries in terms of CO2 per capita, and although the Co2 emission of China and India has increased, their emission is less than those of the US when it comes to CO2 per capita because their population is very large. It is important to analyze using both absolute emission amount and emission per capita.
+
+```{r, warning=FALSE}
+gapminder %>%
+  filter(name %in% c("United States of America", "China", "India", "Japan", "France")) %>% 
+  ggplot(aes(time,co2_PC, col=factor(name)))+
+  geom_point()+
+  geom_line()+
+  labs(x="Year", y="CO2 per Capita", col="Country")
+```
+
+4.  Europe has a stable and high per capita CO2 emissions, and Asia has also maintained a high level after a sharp increase in the 1960s. In the Americas, emissions have varied widely from year to year, but in recent years emissions have declined compared to the 1970s and 1980s. Emissions in Oceania are lower than in other regions, and even lower in Africa. Africa's low per capita CO2 emissions can be attributed to its slow industrialization and large population.
+
+```{r, warning=FALSE}
+gapminder %>% 
+  filter(!is.na(region)) %>% 
+  group_by(region,time) %>% 
+  summarize(mean_co2pc = mean(co2_PC, na.rm=TRUE)) %>% 
+  ggplot(aes(time,mean_co2pc,col=factor(region)))+
+  geom_point()+
+  geom_line()+
+  labs(x="Year",y="Average CO2 Emissions per Capita",col="Continent")
+```
+
+5.  
+
+```{r}
+gapminder %>% 
+  filter(!is.na(region) & time%in%c(1960,2016)) %>% 
+  group_by(region,time) %>%
+  summarize(mean_co2pc = mean(co2_PC, na.rm=TRUE)) %>% 
+  ggplot(aes(region,mean_co2pc,fill=factor(time)))+
+  geom_bar(stat='identity', position='dodge')+
+  labs(x="Continent",y="Average CO2 per Capita",fill="Year")
+```
+
+6.  Since there was no available value for 2019, I used 2016 data instead.
+
+```{r}
+gapminder %>% 
+  filter(!is.na(region) & time==2016) %>% 
+  select(region, name, co2_PC) %>% 
+  group_by(region) %>% 
+  top_n(3, co2_PC) %>% 
+  arrange(region, desc(co2_PC))
+
+gapminder %>% 
+  filter(!is.na(region) & time==2016) %>% 
+  select(region, name, co2_PC) %>% 
+  group_by(region) %>% 
+  top_n(-3, co2_PC) %>% 
+  arrange(region, co2_PC)
+```
+
+## 4 GDP per capita (50pt)
+
+1.  The graph shows a weak positive correlation between GDP per capita and life expectancy. However, while many countries have low GDP per capita, life expectancy is broad. Each region shows different characteristics. For example, in Europe, GDP per capita varies widely, but life expectancy is above 65 years in many countries, while in the Americas, both GDP per capita and life expectancy are high, although not as high as in Europe. On the other hand, most African countries have low GDP per capita and low life expectancy, and as for Asia, some countries have high life expectancy, but two countries with large populations (probably China and India) have low GDP per capita and low life expectancy, so both indicators would be low for Asia as a whole.
+
+```{r, warning=FALSE}
+gapminder %>% 
+  filter(time==1960 & !is.na(region) & !is.na(GDP_PC) & !is.na(lifeExpectancy)) %>% 
+  ggplot(aes(GDP_PC, lifeExpectancy, col=factor(region)))+
+  geom_point(aes(size=totalPopulation))+
+  labs(x="GDP per capita", y="Life Expectancy",col="Continent", size="Country Size")
+```
+
+2.  Since there was no available value for 2019, I used 2016 data instead.
+
+```{r, warning=FALSE}
+gapminder %>% 
+  filter(time==2016 & !is.na(region) & !is.na(GDP_PC) & !is.na(lifeExpectancy)) %>% 
+  ggplot(aes(GDP_PC, lifeExpectancy,col=factor(region)))+
+  geom_point(aes(size=totalPopulation))+
+  labs(x="GDP per capita", y="Life Expectancy", col="Continent", size="Country Size")
+```
+
+3.  A little caution is needed because of the different scales in the two plots, but it can be seen that both GDP per capita and life expectancy have grown substantially. In particular, the minimum value of life expectancy was about 30 and the maximum value was about 75 in 1960, but the minimum value has grown to 50 and the maximum value to about 85 in 2016. While the minimum GDP per capita has not changed much, the maximum value has grown from 30,000 to 115,000. By region, in terms of Europe, life expectancy increased as a whole, and GDP per capita increased significantly in some countries, but the rate of growth varied from country to country, and disparities within regions appear to have widened. Although its GDP per capita and life expectancy has increased, its growth is small compared to Asia and Africa. The Americas have ecperienced high GDP per capita and life expectancy growth in 2016 as in 1960, followed by Europe, with countries such as the United States showing significant GDP per capita growth. Other South American countries also experienced life expectancy increases for nearly 10 years. In Asian countries, life expectancy grew particularly significantly. Originally, most Asian countries were located between 40 and 60 years, but by 2016, most countries had exceeded 65 years. Some countries are now exceeding European levels in both GDP per capita and life expectancy. Asia as a whole has also raised its standards, as significant growth was seen in China and India, which have large populations. Oceania is difficult to be recognized from the graph because of the small number and size of countries, but the overall level of Oceania grew from about the same level as Africa in 1960 to about the level of Europe in 2014 in some countries. In Africa, although there is growth in life expectancy, the life expectancy is lower than in other regions, as it was in 1960, and there is no significant growth with respect to GDP per capita as well.
+
+4.  The results seem to fit the plot above as you can see big improvement in Africa and Asia, while the increase is small in Europe.
+
+```{r}
+gapminder %>% 
+  filter(!is.na(region) & time %in% c(1960,2016)) %>% 
+  group_by(region, time) %>% 
+  summarize(ave_LE = mean(lifeExpectancy, na.rm=TRUE))
+```
+
+5.  Asia has the largest growth in life expectancy from 1960 to 2019, which is 22.8, which is probably because the most asian countries have experienced increase in life expectancy in 60 years, and the growth of India and China is probably highly reflected. Africa has the second largest growth in life expectancy as it had very low life expectancy in 1960. Europe has very low growth in life expectancy partly because it already had high standard of life expectancy in 1960.
+
+```{r}
+gapminder %>% 
+  filter(time%in%c(1960,2019)) %>% 
+  arrange(name, time) %>% 
+  group_by(name) %>% 
+  mutate(last=lag(lifeExpectancy)) %>% 
+  summarize(region,le_growth=lifeExpectancy-last) %>% 
+  na.omit(le_growth) %>% 
+  group_by(region) %>% 
+  summarize(ave_le_growth=mean(le_growth)) %>% 
+  arrange(desc(ave_le_growth))
+```
+
+6.  
+
+```{r, warning=FALSE}
+limited_gapminder <- gapminder %>% 
+  filter(time%in%c(1960, 2019) & !is.na(GDP_PC))
+ggplot(limited_gapminder, aes(x=GDP_PC))+
+  geom_histogram(aes(fill=factor(time)), position='dodge')+
+  labs(x="GDP per Capita", y="", fill="Year")
+  
+```
+
+7.  
+
+```{r}
+us_ranking <- limited_gapminder %>%
+  filter(name != "", !is.na(time), !is.na(lifeExpectancy)) %>%
+  group_by(time) %>% 
+  mutate(ranking=rank(desc(lifeExpectancy), na.last=TRUE)) %>% 
+  filter(name=="United States of America") %>% 
+  select(time, ranking)
+us_ranking
+```
+
+8.  
+
+```{r}
+limited_gapminder %>%
+  filter(name != "", !is.na(time), !is.na(lifeExpectancy)) %>%
+  group_by(time) %>% 
+  summarize(num_country=n_distinct(name)) %>%
+  summarize(time,
+            relative=us_ranking$ranking/num_country)
+```
+
+------------------------------------------------------------------------
+
+I spent 5+ hours on this PS.
